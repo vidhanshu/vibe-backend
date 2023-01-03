@@ -1,6 +1,10 @@
 const mysql = require("mysql2/promise");
 const bcrypt = require("bcryptjs");
-const { DATABASE_CONCURRENT_CONNECTIONS } = require("../configs/constants");
+const sharp = require("sharp");
+const {
+  DATABASE_CONCURRENT_CONNECTIONS,
+  PROFILE_IMAGE_RESIZE_VALUE,
+} = require("../configs/constants");
 const {
   BAD_REQUEST_CODE,
   SUCCESS_CODE,
@@ -8,13 +12,20 @@ const {
   SUCCESS,
 } = require("../configs/response");
 const { sendResponse } = require("../utils/SendResponse.js");
+const {
+  DATABASE_USERNAME,
+  DATABASE_HOST,
+  DATABASE_PASSWORD,
+  DATABASE_NAME,
+  PROFILE_IMAGE_SERVING_URL,
+} = require("../configs/env");
 
 const GetProfile = async (req, res) => {
   const pool = mysql.createPool({
-    host: "localhost",
-    password: "",
-    database: "vibe_db",
-    user: "root",
+    host: DATABASE_HOST,
+    password: DATABASE_PASSWORD,
+    database: DATABASE_NAME,
+    user: DATABASE_USERNAME,
     connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
   });
   try {
@@ -27,15 +38,55 @@ const GetProfile = async (req, res) => {
     if (results.length === 0) {
       return sendResponse(res, true, "user not exists", null, BAD_REQUEST_CODE);
     }
-    const { name, bio, profile, username, email, mobile } = results[0];
-    return sendResponse(
-      res,
-      false,
-      SUCCESS,
-      { name, bio, profile, username, email, mobile },
-      SUCCESS_CODE
-    );
+    const DataToBeSent = results[0];
+    delete DataToBeSent.password;
+    DataToBeSent.profile = `${PROFILE_IMAGE_SERVING_URL}/${id}`;
+    return sendResponse(res, false, SUCCESS, DataToBeSent, SUCCESS_CODE);
   } catch (error) {
+    sendResponse(
+      res,
+      true,
+      "something went wrong",
+      { error: error.message },
+      INTERNAL_ERROR_CODE
+    );
+  } finally {
+    pool.end();
+  }
+};
+
+const GetProfileImage = async (req, res) => {
+  const pool = mysql.createPool({
+    host: DATABASE_HOST,
+    password: DATABASE_PASSWORD,
+    database: DATABASE_NAME,
+    user: DATABASE_USERNAME,
+    connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
+  });
+
+  try {
+    const { id } = req.params;
+    console.log(id);
+    const connection = await pool.getConnection();
+    const [results] = await connection.execute(
+      "SELECT profile FROM user WHERE id = ?",
+      [id]
+    );
+    if (results.length === 0) {
+      res.set("Content-Type", "image/png");
+      res.send(null);
+      return;
+    }
+    const { profile } = results[0];
+    if (!profile) {
+      res.send(null);
+      return;
+    }
+    res.setHeader("Cache-Control", "public, max-age=3000");
+    res.set("Content-Type", "image/png");
+    res.send(Buffer.from(profile, "base64"));
+  } catch (error) {
+    console.log(error);
     sendResponse(
       res,
       true,
@@ -59,10 +110,10 @@ const UpdateName = async (req, res) => {
   }
 
   const pool = mysql.createPool({
-    host: "localhost",
-    password: "",
-    database: "vibe_db",
-    user: "root",
+    host: DATABASE_HOST,
+    password: DATABASE_PASSWORD,
+    database: DATABASE_NAME,
+    user: DATABASE_USERNAME,
     connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
   });
 
@@ -111,10 +162,10 @@ const UpdateBio = async (req, res) => {
   }
 
   const pool = mysql.createPool({
-    host: "localhost",
-    password: "",
-    database: "vibe_db",
-    user: "root",
+    host: DATABASE_HOST,
+    password: DATABASE_PASSWORD,
+    database: DATABASE_NAME,
+    user: DATABASE_USERNAME,
     connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
   });
 
@@ -152,28 +203,29 @@ const UpdateBio = async (req, res) => {
  * @abstract Update user's profile
  */
 const UpdateProfile = async (req, res) => {
-  const { profile } = req.body;
-
-  if (!profile) {
-    return sendResponse(
-      res,
-      true,
-      "Profile is required",
-      null,
-      BAD_REQUEST_CODE
-    );
-  }
-
   const pool = mysql.createPool({
-    host: "localhost",
-    password: "",
-    database: "vibe_db",
-    user: "root",
+    host: DATABASE_HOST,
+    password: DATABASE_PASSWORD,
+    database: DATABASE_NAME,
+    user: DATABASE_USERNAME,
     connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
   });
 
   try {
     const { id } = req.user;
+    if (!req.file) {
+      return sendResponse(
+        res,
+        true,
+        "Profile is required",
+        null,
+        BAD_REQUEST_CODE
+      );
+    }
+    const PNG = await sharp(req.file.buffer)
+      .resize(PROFILE_IMAGE_RESIZE_VALUE, PROFILE_IMAGE_RESIZE_VALUE)
+      .toFormat("png")
+      .toBuffer();
     const connection = await pool.getConnection();
     // Check if user with given ID exists
     const [user] = await connection.execute(
@@ -187,12 +239,13 @@ const UpdateProfile = async (req, res) => {
     }
     // Update user's profile
     await connection.execute("UPDATE user SET profile = ? WHERE id = ?", [
-      profile,
+      PNG,
       id,
     ]);
     // Return success response
     sendResponse(res, false, "Profile updated", null, SUCCESS_CODE);
   } catch (error) {
+    console.log(error);
     sendResponse(
       res,
       true,
@@ -222,10 +275,10 @@ const UpdateMobile = async (req, res) => {
   }
 
   const pool = mysql.createPool({
-    host: "localhost",
-    password: "",
-    database: "vibe_db",
-    user: "root",
+    host: DATABASE_HOST,
+    password: DATABASE_PASSWORD,
+    database: DATABASE_NAME,
+    user: DATABASE_USERNAME,
     connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
   });
 
@@ -278,10 +331,10 @@ const UpdateUsername = async (req, res) => {
     );
   }
   const pool = mysql.createPool({
-    host: "localhost",
-    password: "",
-    database: "vibe_db",
-    user: "root",
+    host: DATABASE_HOST,
+    password: DATABASE_PASSWORD,
+    database: DATABASE_NAME,
+    user: DATABASE_USERNAME,
     connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
   });
 
@@ -341,10 +394,10 @@ const UpdateEmail = async (req, res) => {
     return sendResponse(res, true, "Email is required", null, BAD_REQUEST_CODE);
   }
   const pool = mysql.createPool({
-    host: "localhost",
-    password: "",
-    database: "vibe_db",
-    user: "root",
+    host: DATABASE_HOST,
+    password: DATABASE_PASSWORD,
+    database: DATABASE_NAME,
+    user: DATABASE_USERNAME,
     connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
   });
 
@@ -409,10 +462,10 @@ const UpdatePassword = async (req, res) => {
     );
   }
   const pool = mysql.createPool({
-    host: "localhost",
-    password: "",
-    database: "vibe_db",
-    user: "root",
+    host: DATABASE_HOST,
+    password: DATABASE_PASSWORD,
+    database: DATABASE_NAME,
+    user: DATABASE_USERNAME,
     connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
   });
 
@@ -458,5 +511,5 @@ module.exports = {
   UpdateEmail,
   UpdatePassword,
   GetProfile,
+  GetProfileImage,
 };
-

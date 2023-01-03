@@ -1,0 +1,3 @@
+create user table:
+
+CREATE TABLE `vibe_db`.`user` ( `id` BIGINT NOT NULL AUTO_INCREMENT, `name` VARCHAR(100) NULL DEFAULT NULL, `username` VARCHAR(50) NULL DEFAULT NULL, `mobile` VARCHAR(15) NULL, `email` VARCHAR(50) NULL, `password` VARCHAR(255) NOT NULL, `registeredAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, `lastLogin` DATETIME NULL DEFAULT CURRENT_TIMESTAMP, `bio` TINYTEXT NULL DEFAULT NULL, `profile` BLOB DEFAULT NULL, PRIMARY KEY (`id`), UNIQUE INDEX `uq_username` (`username` ASC), UNIQUE INDEX `uq_mobile` (`mobile` ASC), UNIQUE INDEX `uq_email` (`email` ASC) );

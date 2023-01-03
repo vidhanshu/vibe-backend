@@ -9,10 +9,16 @@ const USERNAME_REGEX = /[A-Za-z][A-Za-z0-9_]{7,29}$/;
 const PASSWORD_REGEX =
   /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
 
+const PROFILE_IMAGE_RESIZE_VALUE = 320;
+const POST_IMAGE_RESIZE_VALUE = 500;
+
+
 module.exports = {
   PORT,
   DATABASE_CONCURRENT_CONNECTIONS,
   EMAIL_REGEX,
   USERNAME_REGEX,
   PASSWORD_REGEX,
+  PROFILE_IMAGE_RESIZE_VALUE,
+  POST_IMAGE_RESIZE_VALUE,
 };
