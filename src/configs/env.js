@@ -12,6 +12,7 @@ const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY;
 const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET;
 const PROFILE_IMAGE_SERVING_URL =
   "http://192.168.43.35:5000/user/profile/image";
+const POST_IMAGE_SERVING_URL = "http://192.168.43.35:5000/post";
 
 module.exports = {
   DATABASE_HOST,
@@ -24,4 +25,5 @@ module.exports = {
   CLOUDINARY_API_KEY,
   CLOUDINARY_API_SECRET,
   PROFILE_IMAGE_SERVING_URL,
+  POST_IMAGE_SERVING_URL
 };

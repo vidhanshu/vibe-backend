@@ -8,11 +8,15 @@ const {
   UpdateProfile,
   UpdateUsername,
   GetProfileImage,
+  FollowUser,
+  GetFollowers,
+  SearchUserByUserNameOrName,
 } = require("../controllers/user");
 
 const { Router } = require("express");
 const auth = require("../middlewares/auth");
 const multer = require("multer");
+const follower = require("../middlewares/follower");
 
 const UserRouter = Router();
 //multer stuff
@@ -37,6 +41,9 @@ const upload = multer({
 
 UserRouter.get("/profile/:id", GetProfile);
 UserRouter.get("/profile/image/:id", GetProfileImage);
+UserRouter.get("/search", SearchUserByUserNameOrName);
+UserRouter.get("/:id/followers", auth, follower, GetFollowers);
+
 UserRouter.patch(
   "/update/image",
   auth,
@@ -46,11 +53,13 @@ UserRouter.patch(
     res.status(400).send({ error: error.message });
   }
 );
+
+UserRouter.post("/:id/follow", auth, FollowUser);
 UserRouter.patch("/update/name", auth, UpdateName);
 UserRouter.patch("/update/username", auth, UpdateUsername);
 UserRouter.patch("/update/email", auth, UpdateEmail);
 UserRouter.patch("/update/mobile", auth, UpdateMobile);
 UserRouter.patch("/update/bio", auth, UpdateBio);
-UserRouter.patch("/update/password", UpdatePassword);
+UserRouter.patch("/update/password", auth, UpdatePassword);
 
 module.exports = UserRouter;

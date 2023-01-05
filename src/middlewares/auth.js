@@ -1,3 +1,9 @@
+/**
+ * @author @vidhanshu
+ * @fileoverview This file contains the auth middleware which is used to authenticate the user
+ * @description: This middleware takes the JWT from the header and verifies if it is valid and if it is valid the JWT will provide the user id which was used to create JWT. this user id can be stored for the further processing
+ */
+
 const mysql = require("mysql2/promise");
 const jwt = require("jsonwebtoken");
 const {
@@ -26,6 +32,14 @@ const auth = async (req, res, next) => {
       return;
     }
     const connection = await pool.getConnection();
+    const [users] = await connection.execute(
+      "SELECT id FROM users WHERE id = ?",
+      [decoded.id]
+    );
+    if (!users.length) {
+      sendResponse(res, true, UNAUTHORIZED, null, UNAUTHORIZED_CODE);
+      return;
+    }
     const [results] = await connection.execute(
       "SELECT * FROM access_tokens WHERE user_id = ? AND access_token = ?",
       [decoded.id, token]

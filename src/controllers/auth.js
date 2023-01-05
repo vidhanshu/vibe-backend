@@ -1,7 +1,4 @@
-const {
-  DATABASE_CONCURRENT_CONNECTIONS,
-  EMAIL_REGEX,
-} = require("../configs/constants");
+const { EMAIL_REGEX } = require("../configs/constants");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const {
@@ -13,19 +10,16 @@ const {
   CREATED_CODE,
   CREATED,
   SUCCESS_CODE,
+  SUCCESS,
 } = require("../configs/response");
 const { sendResponse } = require("../utils/SendResponse.js");
-const { checkValidUserRegistrationDetails } = require("../utils/utils");
 const {
-  JWT_SECRET,
-  DATABASE_HOST,
-  DATABASE_PASSWORD,
-  DATABASE_USERNAME,
-  DATABASE_NAME,
-  PROFILE_IMAGE_SERVING_URL,
-} = require("../configs/env");
-
-const mysql = require("mysql2/promise");
+  checkValidUserRegistrationDetails,
+  generateNameFromEmail,
+  CURRENT_TIMESTAMP,
+} = require("../utils/utils");
+const { JWT_SECRET, PROFILE_IMAGE_SERVING_URL } = require("../configs/env");
+const pool = require("../pool");
 
 /**
  * @abstract Create user
@@ -48,25 +42,12 @@ async function CreateUser(req, res) {
     return;
   }
 
+  const connection = await pool.getConnection();
   try {
-    console.log(
-      DATABASE_HOST,
-      DATABASE_PASSWORD,
-      DATABASE_NAME,
-      DATABASE_USERNAME
-    );
-    const pool = mysql.createPool({
-      host: DATABASE_HOST,
-      password: DATABASE_PASSWORD,
-      database: DATABASE_NAME,
-      user: DATABASE_USERNAME,
-      connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
-    });
-    const connection = await pool.getConnection();
     const hashedPassword = await bcrypt.hash(password, 10);
     const [results] = await connection.execute(
-      "INSERT INTO user(username, email, password) VALUES (?,?,?)",
-      [username, email, hashedPassword]
+      "INSERT INTO users(username, email, password, name) VALUES (?,?,?,?)",
+      [username, email, hashedPassword, generateNameFromEmail(email)]
     );
     const token = jwt.sign({ id: results.insertId }, JWT_SECRET);
     await connection.execute(
@@ -74,7 +55,7 @@ async function CreateUser(req, res) {
       [results.insertId, token]
     );
     const [users] = await connection.execute(
-      "SELECT id, name, username, email, mobile, bio FROM user WHERE id = ?",
+      "SELECT id, name, username, email, mobile, bio FROM users WHERE id = ?",
       [results.insertId]
     );
     const DataToBeSent = users[0];
@@ -97,6 +78,8 @@ async function CreateUser(req, res) {
       { error: error.message },
       INTERNAL_ERROR_CODE
     );
+  } finally {
+    connection.release();
   }
 }
 
@@ -123,22 +106,13 @@ async function LoginUser(req, res) {
 
   if (EMAIL_REGEX.test(email)) {
     login_query =
-      "SELECT id, name, username, email, mobile, bio, password FROM user WHERE email = ?";
+      "SELECT id, lastLogin, name, username, email, mobile, bio, password FROM users WHERE email = ?";
   } else {
     login_query =
-      "SELECT id, name, username, email, mobile, bio, password FROM user WHERE username = ?";
+      "SELECT id, lastLogin, name, username, email, mobile, bio, password FROM users WHERE username = ?";
   }
-
-  const pool = mysql.createPool({
-    host: DATABASE_HOST,
-    password: DATABASE_PASSWORD,
-    database: DATABASE_NAME,
-    user: DATABASE_USERNAME,
-    connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
-  });
-
+  const connection = await pool.getConnection();
   try {
-    const connection = await pool.getConnection();
     const [results] = await connection.execute(login_query, [email]);
     //user doesn't exists
     if (results.length === 0) {
@@ -176,9 +150,15 @@ async function LoginUser(req, res) {
       "INSERT INTO access_tokens (user_id,access_token) VALUES(?,?)",
       [results[0].id, token]
     );
+    //updating the last login time
+    await connection.execute("UPDATE users SET lastLogin = ? WHERE id = ?", [
+      CURRENT_TIMESTAMP(),
+      results[0].id,
+    ]);
     //refactoring the data to be send
     const DataToBeSent = results[0];
     delete DataToBeSent.password;
+    DataToBeSent.lastLogin = CURRENT_TIMESTAMP();
     DataToBeSent.profile = `${PROFILE_IMAGE_SERVING_URL}/${DataToBeSent.id}`;
     sendResponse(res, false, "User logged in successfully", {
       token,
@@ -194,22 +174,15 @@ async function LoginUser(req, res) {
       INTERNAL_ERROR_CODE
     );
   } finally {
-    pool.end();
+    connection.release();
   }
 }
 
 async function LogoutUser(req, res) {
-  const pool = mysql.createPool({
-    host: DATABASE_HOST,
-    password: DATABASE_PASSWORD,
-    database: DATABASE_NAME,
-    user: DATABASE_USERNAME,
-    connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
-  });
+  const connection = await pool.getConnection();
   try {
     const { id } = req.user;
     const token = req.token;
-    const connection = await pool.getConnection();
     const [results] = await connection.execute(
       "DELETE FROM access_tokens WHERE access_token = ? AND user_id = ?",
       [token, id]
@@ -242,22 +215,14 @@ async function LogoutUser(req, res) {
       INTERNAL_ERROR_CODE
     );
   } finally {
-    pool.end();
+    connection.release();
   }
 }
 
 async function LogoutAllUser(req, res) {
-  const pool = mysql.createPool({
-    host: DATABASE_HOST,
-    password: DATABASE_PASSWORD,
-    user: DATABASE_USERNAME,
-    database: DATABASE_NAME,
-    connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
-  });
-
+  const connection = await pool.getConnection();
   try {
     const { id } = req.user;
-    const connection = await pool.getConnection();
     const [results] = await connection.execute(
       "DELETE FROM access_tokens WHERE user_id = ?",
       [id]
@@ -290,12 +255,23 @@ async function LogoutAllUser(req, res) {
       INTERNAL_ERROR_CODE
     );
   } finally {
-    pool.end();
+    connection.release();
   }
 }
 
 //TODO: Delete user
-const DeleteUser = async (req, res) => {};
+const DeleteUser = async (req, res) => {
+  const connection = await pool.getConnection();
+  try {
+    const { id } = req.user;
+    await connection.execute("DELETE FROM users WHERE id = ?", [id]);
+    sendResponse(res, false, SUCCESS, "deleted successfully", SUCCESS_CODE);
+  } catch (error) {
+    sendResponse(res, true, INTERNAL_ERROR, null, INTERNAL_ERROR_CODE);
+  } finally {
+    connection.release();
+  }
+};
 
 module.exports = {
   CreateUser,

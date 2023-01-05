@@ -1,3 +1,128 @@
-create user table:
+create users table:
+CREATE TABLE `vibe_db`.`users`(
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(100) NULL DEFAULT NULL,
+    `username` VARCHAR(50) NULL DEFAULT NULL,
+    `mobile` VARCHAR(15) NULL,
+    `email` VARCHAR(50) NULL,
+    `password` VARCHAR(255) NOT NULL,
+    `registeredAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `lastLogin` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+    `bio` TINYTEXT NULL DEFAULT NULL,
+    `profile` BLOB DEFAULT NULL,
+    PRIMARY KEY(`id`),
+    UNIQUE INDEX `uq_username`(`username` ASC),
+    UNIQUE INDEX `uq_mobile`(`mobile` ASC),
+    UNIQUE INDEX `uq_email`(`email` ASC)
+);
 
-CREATE TABLE `vibe_db`.`user` ( `id` BIGINT NOT NULL AUTO_INCREMENT, `name` VARCHAR(100) NULL DEFAULT NULL, `username` VARCHAR(50) NULL DEFAULT NULL, `mobile` VARCHAR(15) NULL, `email` VARCHAR(50) NULL, `password` VARCHAR(255) NOT NULL, `registeredAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, `lastLogin` DATETIME NULL DEFAULT CURRENT_TIMESTAMP, `bio` TINYTEXT NULL DEFAULT NULL, `profile` BLOB DEFAULT NULL, PRIMARY KEY (`id`), UNIQUE INDEX `uq_username` (`username` ASC), UNIQUE INDEX `uq_mobile` (`mobile` ASC), UNIQUE INDEX `uq_email` (`email` ASC) );
+create access_tokens table:
+CREATE TABLE access_tokens(
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    access_token VARCHAR(255) NOT NULL,
+    PRIMARY KEY(id),
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+create likes table:
+CREATE TABLE likes (
+  user_id BIGINT NOT NULL,
+  post_id BIGINT NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, post_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+
+
+create posts table:
+CREATE TABLE posts(
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    caption TINYTEXT NULL,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    image LONGBLOB NULL,
+    PRIMARY KEY(id),
+    INDEX idx_posts_user(user_id),
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+create comments table :
+CREATE TABLE comments (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    post_id BIGINT NOT NULL,
+    content TEXT NOT NULL,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    PRIMARY KEY (id),
+    INDEX idx_comments_user (user_id),
+    INDEX idx_comments_post (post_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
+)
+
+follower table:
+CREATE TABLE followers(
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    follower_id BIGINT NOT NULL,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    PRIMARY KEY (id),
+    INDEX idx_followers_user (user_id),
+    INDEX idx_followers_follower (follower_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (follower_id) REFERENCES users(id) ON DELETE CASCADE
+)
+
+chats table - it shores the meta data for the message table
+CREATE TABLE chats (
+    id BIGINT NOT NULL AUTO_INCREMENT UNIQUE,
+    participant_1 BIGINT NOT NULL,
+    participant_2 BIGINT NOT NULL,
+    last_message TEXT DEFAULT NULL,
+    last_message_timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_chats_participant_1 (participant_1 ASC),
+    INDEX idx_chats_participant_2 (participant_2 ASC),
+    CONSTRAINT fk_chats_participant_1
+    FOREIGN KEY (participant_1)
+    REFERENCES users (id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+ 	CONSTRAINT fk_chats_participant_2
+    FOREIGN KEY (participant_2)
+    REFERENCES users (id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+)
+
+message table - it stores the messages sent by one user to other user
+CREATE TABLE messages(
+    id BIGINT NOT NULL AUTO_INCREMENT UNIQUE,
+    sender BIGINT NOT NULL,
+    reciever BIGINT NOT NULL,
+    message TEXT NOT NULL,
+    chat_id BIGINT NOT NULL,
+    sentAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_messages_sender(sender ASC),
+    INDEX idx_messages_recievert(reciever ASC),
+    INDEX idx_messages_chat_id(chat_id ASC),
+    PRIMARY KEY(id),
+    CONSTRAINT fk_messages_sender FOREIGN KEY(sender) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_messages_reciever FOREIGN KEY(reciever) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_messages_chat_id FOREIGN KEY(chat_id) REFERENCES chats(id) ON DELETE CASCADE ON UPDATE CASCADE
+)
+
+statuses table:
+CREATE TABLE statuses (
+    id BIGINT NOT NULL UNIQUE AUTO_INCREMENT,
+    image LONGBLOB DEFAULT NULL,
+    expiresAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    user_id BIGINT NOT NULL,
+    createdAt BIGINT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
+)
