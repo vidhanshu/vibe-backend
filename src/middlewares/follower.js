@@ -13,18 +13,13 @@ const {
 } = require("../configs/env");
 const { INTERNAL_ERROR, INTERNAL_ERROR_CODE } = require("../configs/response");
 const { sendResponse } = require("../utils/SendResponse");
+const pool = require("../pool");
+
 const follower = async (req, res, next) => {
-  const pool = mysql.createPool({
-    host: DATABASE_HOST,
-    password: DATABASE_PASSWORD,
-    database: DATABASE_NAME,
-    user: DATABASE_USERNAME,
-    connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
-  });
+  const connection = await pool.getConnection();
   try {
     const { id } = req.params;
     const { id: userId } = req.user;
-    const connection = await pool.getConnection();
     const [results] = await connection.execute(
       "SELECT EXISTS(SELECT * FROM followers WHERE follower_id = ? AND user_id = ?) AS isFollowing",
       [userId, id]
@@ -49,7 +44,7 @@ const follower = async (req, res, next) => {
       INTERNAL_ERROR_CODE
     );
   } finally {
-    pool.end();
+    connection.release();
   }
 };
 

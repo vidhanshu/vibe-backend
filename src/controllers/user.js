@@ -1,9 +1,9 @@
-const mysql = require("mysql2/promise");
 const bcrypt = require("bcryptjs");
 const sharp = require("sharp");
 const {
-  DATABASE_CONCURRENT_CONNECTIONS,
   PROFILE_IMAGE_RESIZE_VALUE,
+  USERNAME_REGEX,
+  EMAIL_REGEX,
 } = require("../configs/constants");
 const {
   BAD_REQUEST_CODE,
@@ -13,25 +13,14 @@ const {
   INTERNAL_ERROR,
 } = require("../configs/response");
 const { sendResponse } = require("../utils/SendResponse.js");
-const {
-  DATABASE_USERNAME,
-  DATABASE_HOST,
-  DATABASE_PASSWORD,
-  DATABASE_NAME,
-  PROFILE_IMAGE_SERVING_URL,
-} = require("../configs/env");
+const { PROFILE_IMAGE_SERVING_URL } = require("../configs/env");
+const pool = require("../pool");
 
 const GetProfile = async (req, res) => {
-  const pool = mysql.createPool({
-    host: DATABASE_HOST,
-    password: DATABASE_PASSWORD,
-    database: DATABASE_NAME,
-    user: DATABASE_USERNAME,
-    connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
-  });
+  const connection = await pool.getConnection();
   try {
+    console.log("first");
     const { id } = req.params;
-    const connection = await pool.getConnection();
     const [results] = await connection.execute(
       "SELECT *,(SELECT COUNT(*) FROM  followers WHERE user_id = users.id) AS followers,(SELECT COUNT(*) FROM  followers WHERE follower_id = users.id) AS following FROM users WHERE id = ?",
       [id]
@@ -41,7 +30,8 @@ const GetProfile = async (req, res) => {
     }
     const DataToBeSent = results[0];
     delete DataToBeSent.password;
-    DataToBeSent.profile = `${PROFILE_IMAGE_SERVING_URL}/${id}`;
+    DataToBeSent.profile = `${PROFILE_IMAGE_SERVING_URL}/${id}?${Date.now()}}`;
+    console.log(DataToBeSent);
     return sendResponse(res, false, SUCCESS, DataToBeSent, SUCCESS_CODE);
   } catch (error) {
     sendResponse(
@@ -52,22 +42,14 @@ const GetProfile = async (req, res) => {
       INTERNAL_ERROR_CODE
     );
   } finally {
-    pool.end();
+    connection.release();
   }
 };
 
 const GetProfileImage = async (req, res) => {
-  const pool = mysql.createPool({
-    host: DATABASE_HOST,
-    password: DATABASE_PASSWORD,
-    database: DATABASE_NAME,
-    user: DATABASE_USERNAME,
-    connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
-  });
-
+  const connection = await pool.getConnection();
   try {
     const { id } = req.params;
-    const connection = await pool.getConnection();
     const [results] = await connection.execute(
       "SELECT profile FROM users WHERE id = ?",
       [id]
@@ -82,7 +64,7 @@ const GetProfileImage = async (req, res) => {
       res.send(null);
       return;
     }
-    res.setHeader("Cache-Control", "public, max-age=3000");
+    // res.set("Cache-control", "no-cache, no-store, must-revalidate");
     res.set("Content-Type", "image/png");
     res.send(profile);
   } catch (error) {
@@ -95,7 +77,7 @@ const GetProfileImage = async (req, res) => {
       INTERNAL_ERROR_CODE
     );
   } finally {
-    pool.end();
+    connection.release();
   }
 };
 
@@ -103,18 +85,11 @@ const GetProfileImage = async (req, res) => {
  * @abstract get Followers list
  */
 const GetFollowers = async (req, res) => {
-  const pool = mysql.createPool({
-    host: DATABASE_HOST,
-    password: DATABASE_PASSWORD,
-    database: DATABASE_NAME,
-    user: DATABASE_USERNAME,
-    connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
-  });
+  const connection = await pool.getConnection();
 
   try {
     const { id } = req.params;
     const { limit, offset } = req.query;
-    const connection = await pool.getConnection();
     let query =
       "SELECT users.id, users.name, users.username  FROM followers INNER JOIN users ON followers.user_id = users.id WHERE followers.user_id = ?";
     if (limit) {
@@ -140,18 +115,12 @@ const GetFollowers = async (req, res) => {
       INTERNAL_ERROR_CODE
     );
   } finally {
-    pool.end();
+    connection.release();
   }
 };
 
 const SearchUserByUserNameOrName = async (req, res) => {
-  const pool = mysql.createPool({
-    host: DATABASE_HOST,
-    password: DATABASE_PASSWORD,
-    database: DATABASE_NAME,
-    user: DATABASE_USERNAME,
-    connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
-  });
+  const connection = await pool.getConnection();
   try {
     const { search, limit, offset } = req.query;
     if (!search) {
@@ -164,12 +133,13 @@ const SearchUserByUserNameOrName = async (req, res) => {
     if (offset) {
       query += ` OFFSET ${offset}`;
     }
-    const connection = await pool.getConnection();
     const [results] = await connection.execute(query);
     const DataToBeSent = results.map((result) => {
       return {
         ...result,
-        profile_image: `${PROFILE_IMAGE_SERVING_URL}/${result.id}`,
+        profile_image: `${PROFILE_IMAGE_SERVING_URL}/${
+          result.id
+        }?${Date.now()}`,
       };
     });
     sendResponse(res, false, SUCCESS, DataToBeSent, SUCCESS_CODE);
@@ -177,7 +147,7 @@ const SearchUserByUserNameOrName = async (req, res) => {
     console.log(error);
     sendResponse(res, false, INTERNAL_ERROR, null, INTERNAL_ERROR_CODE);
   } finally {
-    pool.end();
+    connection.release();
   }
 };
 /**
@@ -190,18 +160,10 @@ const UpdateName = async (req, res) => {
     return sendResponse(res, true, "Name is required", null, BAD_REQUEST_CODE);
   }
 
-  const pool = mysql.createPool({
-    host: DATABASE_HOST,
-    password: DATABASE_PASSWORD,
-    database: DATABASE_NAME,
-    user: DATABASE_USERNAME,
-    connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
-  });
-
+  const connection = await pool.getConnection();
   try {
     //getting id from middleware
     const { id } = req.user;
-    const connection = await pool.getConnection();
     // Update user's name
     await connection.execute("UPDATE users SET name = ? WHERE id = ?", [
       name,
@@ -219,7 +181,7 @@ const UpdateName = async (req, res) => {
     );
   } finally {
     // Release connection
-    pool.end();
+    connection.release();
   }
 };
 
@@ -232,17 +194,10 @@ const UpdateBio = async (req, res) => {
     return sendResponse(res, true, "Bio is required", null, BAD_REQUEST_CODE);
   }
 
-  const pool = mysql.createPool({
-    host: DATABASE_HOST,
-    password: DATABASE_PASSWORD,
-    database: DATABASE_NAME,
-    user: DATABASE_USERNAME,
-    connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
-  });
+  const connection = await pool.getConnection();
 
   try {
     const { id } = req.user;
-    const connection = await pool.getConnection();
     // Update user's bio
     await connection.execute("UPDATE users SET bio = ? WHERE id = ?", [
       bio,
@@ -260,21 +215,14 @@ const UpdateBio = async (req, res) => {
     );
   } finally {
     // Release connection
-    pool.end();
+    connection.release();
   }
 };
 /**
  * @abstract Update user's profile
  */
 const UpdateProfile = async (req, res) => {
-  const pool = mysql.createPool({
-    host: DATABASE_HOST,
-    password: DATABASE_PASSWORD,
-    database: DATABASE_NAME,
-    user: DATABASE_USERNAME,
-    connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
-  });
-
+  const connection = await pool.getConnection();
   try {
     const { id } = req.user;
     if (!req.file) {
@@ -290,7 +238,6 @@ const UpdateProfile = async (req, res) => {
       .resize(PROFILE_IMAGE_RESIZE_VALUE, PROFILE_IMAGE_RESIZE_VALUE)
       .toFormat("png")
       .toBuffer();
-    const connection = await pool.getConnection();
     // Update user's profile
     await connection.execute("UPDATE users SET profile = ? WHERE id = ?", [
       PNG,
@@ -309,7 +256,7 @@ const UpdateProfile = async (req, res) => {
     );
   } finally {
     // Release connection
-    pool.end();
+    connection.release();
   }
 };
 /**
@@ -327,18 +274,9 @@ const UpdateMobile = async (req, res) => {
       BAD_REQUEST_CODE
     );
   }
-
-  const pool = mysql.createPool({
-    host: DATABASE_HOST,
-    password: DATABASE_PASSWORD,
-    database: DATABASE_NAME,
-    user: DATABASE_USERNAME,
-    connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
-  });
-
+  const connection = await pool.getConnection();
   try {
     const { id } = req.user;
-    const connection = await pool.getConnection();
     // Update user's mobile
     await connection.execute("UPDATE users SET mobile = ? WHERE id = ?", [
       mobile,
@@ -356,7 +294,7 @@ const UpdateMobile = async (req, res) => {
     );
   } finally {
     // Release connection
-    pool.end();
+    connection.release();
   }
 };
 
@@ -374,17 +312,20 @@ const UpdateUsername = async (req, res) => {
       BAD_REQUEST_CODE
     );
   }
-  const pool = mysql.createPool({
-    host: DATABASE_HOST,
-    password: DATABASE_PASSWORD,
-    database: DATABASE_NAME,
-    user: DATABASE_USERNAME,
-    connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
-  });
 
+  if (USERNAME_REGEX.test(username) === false) {
+    return sendResponse(
+      res,
+      true,
+      "Username must be alphanumeric and can contain underscore",
+      null,
+      BAD_REQUEST_CODE
+    );
+  }
+
+  const connection = await pool.getConnection();
   try {
     const { id } = req.user;
-    const connection = await pool.getConnection();
     //check if username already taken
     const [rows] = await connection.execute(
       "SELECT EXISTS(SELECT 1 FROM users WHERE username = ?)",
@@ -417,7 +358,7 @@ const UpdateUsername = async (req, res) => {
     );
   } finally {
     //Release connection
-    pool.end();
+    connection.release();
   }
 };
 
@@ -429,17 +370,20 @@ const UpdateEmail = async (req, res) => {
   if (!email) {
     return sendResponse(res, true, "Email is required", null, BAD_REQUEST_CODE);
   }
-  const pool = mysql.createPool({
-    host: DATABASE_HOST,
-    password: DATABASE_PASSWORD,
-    database: DATABASE_NAME,
-    user: DATABASE_USERNAME,
-    connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
-  });
 
+  if (EMAIL_REGEX.test(email) === false) {
+    return sendResponse(
+      res,
+      true,
+      "Email is not valid",
+      null,
+      BAD_REQUEST_CODE
+    );
+  }
+
+  const connection = await pool.getConnection();
   try {
     const { id } = req.user;
-    const connection = await pool.getConnection();
     //check if email already taken
     const [rows] = await connection.execute(
       "SELECT EXISTS(SELECT 1 FROM users WHERE email = ?)",
@@ -472,7 +416,7 @@ const UpdateEmail = async (req, res) => {
     );
   } finally {
     //Release connection
-    pool.end();
+    connection.release();
   }
 };
 /**
@@ -489,17 +433,10 @@ const UpdatePassword = async (req, res) => {
       BAD_REQUEST_CODE
     );
   }
-  const pool = mysql.createPool({
-    host: DATABASE_HOST,
-    password: DATABASE_PASSWORD,
-    database: DATABASE_NAME,
-    user: DATABASE_USERNAME,
-    connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
-  });
 
+  const connection = await pool.getConnection();
   try {
     const { id } = req.user;
-    const connection = await pool.getConnection();
     const hash = await bcrypt.hash(password, 10);
     //update password
     await connection.execute("UPDATE users SET password = ? WHERE id = ?", [
@@ -518,23 +455,16 @@ const UpdatePassword = async (req, res) => {
     );
   } finally {
     //Release connection
-    pool.end();
+    connection.release();
   }
 };
 
 const FollowUser = async (req, res) => {
   const { id } = req.params;
   const { id: userId } = req.user;
-  const pool = mysql.createPool({
-    host: DATABASE_HOST,
-    password: DATABASE_PASSWORD,
-    database: DATABASE_NAME,
-    user: DATABASE_USERNAME,
-    connectionLimit: DATABASE_CONCURRENT_CONNECTIONS,
-  });
 
+  const connection = await pool.getConnection();
   try {
-    const connection = await pool.getConnection();
     const [rows] = await connection.execute(
       "SELECT EXISTS(SELECT 1 FROM users WHERE id = ?)",
       [id]
@@ -585,7 +515,7 @@ const FollowUser = async (req, res) => {
     );
   } finally {
     //Release connection
-    pool.end();
+    connection.release();
   }
 };
 

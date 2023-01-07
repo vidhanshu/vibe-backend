@@ -13,6 +13,8 @@ const {
   DeleteComment,
   GetAllComments,
   DeletePost,
+  GetHomePosts,
+  GetAllLikedByUsers,
 } = require("../controllers/post");
 //multer stuff
 const storage = multer.memoryStorage();
@@ -46,12 +48,32 @@ PostRoute.get("/:id", GetPostImage);
 PostRoute.get("/user/:id", GetPosts);
 /**
  * @author @vidhanshu
+ * get: /
+ * description: Get all posts for home screens only first 10 by def
+ * @param : id of user
+ * @query : limit and offset
+ */
+PostRoute.get("/", auth, GetHomePosts);
+
+/**
+ * @author @vidhanshu
  * get: /post/{id}/comments:
  * description: Get all comments of a post
  * @param : id of post
  * @query : limit and offset
  */
 PostRoute.get("/:id/comments", GetAllComments);
+
+/**
+ * @author @vidhanshu
+ * get: /post/{id}/comments:
+ * description: get all user who liked the particulr post
+ * @param : id of post
+ * @query : limit and offset
+ *
+ */
+
+PostRoute.get("/:id/likedby/users", GetAllLikedByUsers);
 
 /**
  * @author @vidhanshu
@@ -75,7 +97,7 @@ PostRoute.post("/:id/comment", auth, Comment);
  * description: Like and Unlike a post
  * @param : id of post
  */
-PostRoute.patch("/:id/like", auth, LikePost);
+PostRoute.post("/:id/like", auth, LikePost);
 /**
  * @author @vidhanshu
  * patch: /post/caption/{id}:

@@ -1,5 +1,10 @@
 const { Router } = require("express");
-const { AddStatus, RemoveStatus, GetStatus } = require("../controllers/status");
+const {
+  AddStatus,
+  RemoveStatus,
+  GetStatus,
+  GetHomeStatuses,
+} = require("../controllers/status");
 const auth = require("../middlewares/auth");
 const multer = require("multer");
 const storage = multer.memoryStorage();
@@ -21,8 +26,8 @@ const upload = multer({
   },
 });
 const StatusRouter = Router();
-
-StatusRouter.post("/:id", GetStatus);
+StatusRouter.get("/", GetHomeStatuses);
+StatusRouter.get("/:id", GetStatus);
 StatusRouter.post("/create", auth, upload.single("image"), AddStatus);
 StatusRouter.delete("/delete", auth, RemoveStatus);
 

@@ -13,6 +13,10 @@ const {
 const sharp = require("sharp");
 const { TIMESTAMP_AFTER_SPECIFIC_MINS } = require("../utils/utils");
 const pool = require("../pool");
+const {
+  STATUS_IMAGE_SERVING_URL,
+  PROFILE_IMAGE_SERVING_URL,
+} = require("../configs/env");
 
 const GetStatus = async (req, res) => {
   const connection = await pool.getConnection();
@@ -35,24 +39,69 @@ const GetStatus = async (req, res) => {
     connection.release();
   }
 };
+
+const GetHomeStatuses = async (req, res) => {
+  const connection = await pool.getConnection();
+  try {
+    const { limit, offset } = req.query;
+    let query =
+      "SELECT statuses.id, users.name, users.username, users.id as user_id, statuses.createdAt FROM statuses INNER JOIN users ON statuses.user_id = users.id";
+    if (limit) {
+      query += ` LIMIT ${limit}`;
+    }
+    if (offset) {
+      query += ` OFFSET ${offset}`;
+    }
+    if (!limit && !offset) {
+      query += " LIMIT 10";
+    }
+    const [rows] = await connection.execute(query);
+    const DataToBeSent = rows.map((row) => {
+      return {
+        ...row,
+        status: `${STATUS_IMAGE_SERVING_URL}/${row.user_id}?${Math.random()}`,
+        profile: `${PROFILE_IMAGE_SERVING_URL}/${row.user_id}?${Math.random()}`,
+      };
+    });
+    sendResponse(res, false, SUCCESS, DataToBeSent, SUCCESS_CODE);
+  } catch (error) {
+    console.log(error);
+    sendResponse(res, false, SUCCESS, null, SUCCESS_CODE);
+  } finally {
+    connection.release();
+  }
+};
+
 const AddStatus = async (req, res) => {
   const connection = await pool.getConnection();
   try {
     const { file } = req;
     if (!file) {
-      sendResponse(req, true, DATA_NOT_PROVIDED, null, BAD_REQUEST_CODE);
+      sendResponse(res, true, DATA_NOT_PROVIDED, null, BAD_REQUEST_CODE);
       return;
     }
     const PNG = await sharp(req.file.buffer)
       .resize(STATUS_IMAGE_RESIZE_VALUE, STATUS_IMAGE_RESIZE_VALUE)
       .toFormat("png")
       .toBuffer();
+    const [statuses] = await connection.execute(
+      "SELECT EXISTS(SELECT * FROM statuses WHERE user_id = ?) As isStatusExists",
+      [req.user.id]
+    );
+
+    if (statuses[0].isStatusExists) {
+      await connection.execute(
+        "UPDATE statuses SET image = ? WHERE user_id = ?",
+        [PNG, req.user.id]
+      );
+      sendResponse(res, false, SUCCESS, null, SUCCESS_CODE);
+      return;
+    }
 
     await connection.execute(
       "INSERT INTO statuses (image, expiresAt, user_id) VALUES (?, ?, ?)",
       [PNG, TIMESTAMP_AFTER_SPECIFIC_MINS(24 * 60), req.user.id]
     );
-
     /**
      * @description scheduling the cron job to run every midnight once and delete all statuses whose expiresAt is older than current time
      * @doubt -> one more doubt as i have created the cron job inside the express rounde handler will the multiple cron jobs will be created on every req?
@@ -72,7 +121,6 @@ const AddStatus = async (req, res) => {
         connection_for_cron_job.release();
       }
     });
-
     sendResponse(res, false, SUCCESS, null, SUCCESS_CODE);
   } catch (error) {
     console.log(error);
@@ -99,4 +147,5 @@ module.exports = {
   AddStatus,
   RemoveStatus,
   GetStatus,
+  GetHomeStatuses,
 };

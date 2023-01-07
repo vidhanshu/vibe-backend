@@ -42,7 +42,7 @@ const upload = multer({
 UserRouter.get("/profile/:id", GetProfile);
 UserRouter.get("/profile/image/:id", GetProfileImage);
 UserRouter.get("/search", SearchUserByUserNameOrName);
-UserRouter.get("/:id/followers", auth, follower, GetFollowers);
+UserRouter.get("/:id/user/followers/all", auth, follower, GetFollowers);
 
 UserRouter.patch(
   "/update/image",

@@ -10,6 +10,9 @@ const ChatRoute = require("./src/routes/chat.js");
 const StatusRouter = require("./src/routes/status.js");
 
 const app = express();
+//creating socket server
+const server = require("http").Server(app);
+const io = require("socket.io")(server);
 
 //middlewares
 app.use(cors());
@@ -28,6 +31,12 @@ app.get("/", (req, res) => {
   res.status(200).send("Hello World");
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server is running on PORT ${PORT}`);
+});
+
+// socket.io stuff
+
+io.on("connection", (socket) => {
+  console.log("a user connected");
 });
