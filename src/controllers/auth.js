@@ -1,4 +1,4 @@
-const { EMAIL_REGEX } = require("../configs/constants");
+const { EMAIL_REGEX } = require("../configs/constants.js");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const {
@@ -11,15 +11,15 @@ const {
   CREATED,
   SUCCESS_CODE,
   SUCCESS,
-} = require("../configs/response");
+} = require("../configs/response.js");
 const { sendResponse } = require("../utils/SendResponse.js");
 const {
   checkValidUserRegistrationDetails,
   generateNameFromEmail,
   CURRENT_TIMESTAMP,
-} = require("../utils/utils");
-const { JWT_SECRET, PROFILE_IMAGE_SERVING_URL } = require("../configs/env");
-const pool = require("../pool");
+} = require("../utils/utils.js");
+const { JWT_SECRET, PROFILE_IMAGE_SERVING_URL } = require("../configs/env.js");
+const pool = require("../pool.js");
 
 /**
  * @abstract Create user

@@ -5,7 +5,7 @@ const {
   DATABASE_NAME,
   DATABASE_USERNAME,
 } = require("./configs/env");
-const { DATABASE_CONCURRENT_CONNECTIONS } = require("./configs/constants");
+const { DATABASE_CONCURRENT_CONNECTIONS } = require("./configs/constants.js");
 
 const pool = mysql.createPool({
   host: DATABASE_HOST,

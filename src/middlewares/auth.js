@@ -1,8 +1,8 @@
 const jwt = require("jsonwebtoken");
-const { JWT_SECRET } = require("../configs/env");
-const { UNAUTHORIZED, UNAUTHORIZED_CODE } = require("../configs/response");
-const { sendResponse } = require("../utils/SendResponse");
-const pool = require("../pool");
+const { JWT_SECRET } = require("../configs/env.js");
+const { UNAUTHORIZED, UNAUTHORIZED_CODE } = require("../configs/response.js");
+const { sendResponse } = require("../utils/SendResponse.js");
+const pool = require("../pool.js");
 
 const auth = async (req, res, next) => {
   let connection = null;

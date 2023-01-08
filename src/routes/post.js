@@ -1,5 +1,5 @@
 const { Router } = require("express");
-const auth = require("../middlewares/auth");
+const auth = require("../middlewares/auth.js");
 const multer = require("multer");
 const {
   CreatePost,
@@ -15,7 +15,7 @@ const {
   DeletePost,
   GetHomePosts,
   GetAllLikedByUsers,
-} = require("../controllers/post");
+} = require("../controllers/post.js");
 //multer stuff
 const storage = multer.memoryStorage();
 const upload = multer({

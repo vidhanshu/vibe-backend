@@ -4,17 +4,17 @@ const {
   PROFILE_IMAGE_RESIZE_VALUE,
   USERNAME_REGEX,
   EMAIL_REGEX,
-} = require("../configs/constants");
+} = require("../configs/constants.js");
 const {
   BAD_REQUEST_CODE,
   SUCCESS_CODE,
   INTERNAL_ERROR_CODE,
   SUCCESS,
   INTERNAL_ERROR,
-} = require("../configs/response");
+} = require("../configs/response.js");
 const { sendResponse } = require("../utils/SendResponse.js");
-const { PROFILE_IMAGE_SERVING_URL } = require("../configs/env");
-const pool = require("../pool");
+const { PROFILE_IMAGE_SERVING_URL } = require("../configs/env.js");
+const pool = require("../pool.js");
 
 const GetProfile = async (req, res) => {
   let connection = null;

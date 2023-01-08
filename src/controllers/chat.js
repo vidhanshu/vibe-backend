@@ -1,4 +1,4 @@
-const { sendResponse } = require("../utils/sendResponse");
+const { sendResponse } = require("../utils/sendResponse.js");
 const {
   BAD_REQUEST,
   BAD_REQUEST_CODE,
@@ -6,13 +6,11 @@ const {
   INTERNAL_ERROR,
   INTERNAL_ERROR_CODE,
   SUCCESS,
-  UNAUTHORIZED,
-  UNAUTHORIZED_CODE,
   NOT_FOUND,
-} = require("../configs/response");
-const { PROFILE_IMAGE_SERVING_URL } = require("../configs/env");
-const pool = require("../pool");
-const { CURRENT_TIMESTAMP } = require("../utils/utils");
+} = require("../configs/response.js.js");
+const { PROFILE_IMAGE_SERVING_URL } = require("../configs/env.js");
+const pool = require("../pool.js");
+const { CURRENT_TIMESTAMP } = require("../utils/utils.js");
 
 const GetAllMessages = async (req, res) => {
   let connection = null;

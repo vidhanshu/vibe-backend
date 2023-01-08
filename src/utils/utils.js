@@ -2,16 +2,16 @@ const {
   EMAIL_REGEX,
   USERNAME_REGEX,
   PASSWORD_REGEX,
-} = require("../configs/constants");
+} = require("../configs/constants.js");
 const {
   DATA_NOT_PROVIDED,
   INVALID_EMAIL,
   INVALID_USERNAME,
   INVALID_PASSWORD,
   SQL_DUPLICATE_ENTRY,
-} = require("../configs/response");
+} = require("../configs/response.js");
 const jwt = require("jsonwebtoken");
-const { JWT_SECRET } = require("../configs/env");
+const { JWT_SECRET } = require("../configs/env.js");
 /**
  * @abstract This function checks if the user has provided all the required details for registration
  *

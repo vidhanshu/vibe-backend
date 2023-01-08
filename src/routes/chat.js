@@ -3,9 +3,9 @@ const {
   SendMessage,
   GetAllMessages,
   GetChatRecents,
-} = require("../controllers/chat");
+} = require("../controllers/chat.js");
 const ChatRouter = Router();
-const auth = require("../middlewares/auth");
+const auth = require("../middlewares/auth.js");
 
 ChatRouter.get("/:chat_id/messages/:reciever_id", auth, GetAllMessages);
 ChatRouter.get("/recents", auth, GetChatRecents);

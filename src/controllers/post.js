@@ -2,8 +2,8 @@ const sharp = require("sharp");
 const {
   POST_IMAGE_RESIZE_VALUE_WIDTH,
   POST_IMAGE_RESIZE_VALUE_HEIGHT,
-} = require("../configs/constants");
-const { CURRENT_TIMESTAMP } = require("../utils/utils");
+} = require("../configs/constants.js");
+const { CURRENT_TIMESTAMP } = require("../utils/utils.js");
 const {
   INTERNAL_ERROR,
   INTERNAL_ERROR_CODE,
@@ -15,13 +15,13 @@ const {
   SUCCESS_CODE,
   NOT_FOUND,
   NOT_FOUND_CODE,
-} = require("../configs/response");
+} = require("../configs/response.js");
 const {
   POST_IMAGE_SERVING_URL,
   PROFILE_IMAGE_SERVING_URL,
-} = require("../configs/env");
-const { sendResponse } = require("../utils/SendResponse");
-const pool = require("../pool");
+} = require("../configs/env.js");
+const { sendResponse } = require("../utils/SendResponse.js");
+const pool = require("../pool.js");
 
 //TODO
 const GetHomePosts = async (req, res) => {

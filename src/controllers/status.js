@@ -1,7 +1,7 @@
-const { STATUS_IMAGE_RESIZE_VALUE } = require("../configs/constants");
+const { STATUS_IMAGE_RESIZE_VALUE } = require("../configs/constants.js");
 const cron = require("node-cron");
 
-const { sendResponse } = require("../utils/sendResponse");
+const { sendResponse } = require("../utils/sendResponse.js");
 const {
   BAD_REQUEST_CODE,
   INTERNAL_ERROR,
@@ -9,14 +9,14 @@ const {
   DATA_NOT_PROVIDED,
   SUCCESS,
   SUCCESS_CODE,
-} = require("../configs/response");
+} = require("../configs/response.js");
 const sharp = require("sharp");
-const { TIMESTAMP_AFTER_SPECIFIC_MINS } = require("../utils/utils");
-const pool = require("../pool");
+const { TIMESTAMP_AFTER_SPECIFIC_MINS } = require("../utils/utils.js");
+const pool = require("../pool.js");
 const {
   STATUS_IMAGE_SERVING_URL,
   PROFILE_IMAGE_SERVING_URL,
-} = require("../configs/env");
+} = require("../configs/env.js");
 
 const GetStatus = async (req, res) => {
   let connection = null;

@@ -1,19 +1,9 @@
-/**
- * @author @vidhanshu
- * @fileoverview This file contains the middleware to check if the user is following the user whose profile is being viewed
- * @description: This middleware takes the user id from the params and checks if the user is following the user whose profile is being viewed
- */
-const mysql = require("mysql2/promise");
-const { DATABASE_CONCURRENT_CONNECTIONS } = require("../configs/constants");
 const {
-  DATABASE_HOST,
-  DATABASE_PASSWORD,
-  DATABASE_NAME,
-  DATABASE_USERNAME,
-} = require("../configs/env");
-const { INTERNAL_ERROR, INTERNAL_ERROR_CODE } = require("../configs/response");
-const { sendResponse } = require("../utils/SendResponse");
-const pool = require("../pool");
+  INTERNAL_ERROR,
+  INTERNAL_ERROR_CODE,
+} = require("../configs/response.js");
+const { sendResponse } = require("../utils/SendResponse.js");
+const pool = require("../pool.js");
 
 const follower = async (req, res, next) => {
   const connection = await pool.getConnection();

@@ -11,12 +11,12 @@ const {
   FollowUser,
   GetFollowers,
   SearchUserByUserNameOrName,
-} = require("../controllers/user");
+} = require("../controllers/user.js");
 
 const { Router } = require("express");
-const auth = require("../middlewares/auth");
+const auth = require("../middlewares/auth.js");
 const multer = require("multer");
-const follower = require("../middlewares/follower");
+const follower = require("../middlewares/follower.js");
 
 const UserRouter = Router();
 //multer stuff

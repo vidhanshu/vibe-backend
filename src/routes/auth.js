@@ -4,8 +4,8 @@ const {
   LoginUser,
   LogoutAllUser,
   LogoutUser,
-} = require("../controllers/auth");
-const auth = require("../middlewares/auth");
+} = require("../controllers/auth.js");
+const auth = require("../middlewares/auth.js");
 const { Router } = require("express");
 
 const AuthRouter = Router();
