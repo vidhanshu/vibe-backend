@@ -42,8 +42,9 @@ async function CreateUser(req, res) {
     return;
   }
 
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const hashedPassword = await bcrypt.hash(password, 10);
     const [results] = await connection.execute(
       "INSERT INTO users(username, email, password, name) VALUES (?,?,?,?)",
@@ -79,7 +80,7 @@ async function CreateUser(req, res) {
       INTERNAL_ERROR_CODE
     );
   } finally {
-    connection.release();
+    connection?.release();
   }
 }
 
@@ -111,8 +112,9 @@ async function LoginUser(req, res) {
     login_query =
       "SELECT id, lastLogin, name, username, email, mobile, bio, password FROM users WHERE username = ?";
   }
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const [results] = await connection.execute(login_query, [email]);
     //user doesn't exists
     if (results.length === 0) {
@@ -174,13 +176,14 @@ async function LoginUser(req, res) {
       INTERNAL_ERROR_CODE
     );
   } finally {
-    connection.release();
+    connection?.release();
   }
 }
 
 async function LogoutUser(req, res) {
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.user;
     const token = req.token;
     const [results] = await connection.execute(
@@ -215,13 +218,14 @@ async function LogoutUser(req, res) {
       INTERNAL_ERROR_CODE
     );
   } finally {
-    connection.release();
+    connection?.release();
   }
 }
 
 async function LogoutAllUser(req, res) {
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.user;
     const [results] = await connection.execute(
       "DELETE FROM access_tokens WHERE user_id = ?",
@@ -255,21 +259,22 @@ async function LogoutAllUser(req, res) {
       INTERNAL_ERROR_CODE
     );
   } finally {
-    connection.release();
+    connection?.release();
   }
 }
 
 //TODO: Delete user
 const DeleteUser = async (req, res) => {
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.user;
     await connection.execute("DELETE FROM users WHERE id = ?", [id]);
     sendResponse(res, false, SUCCESS, "deleted successfully", SUCCESS_CODE);
   } catch (error) {
     sendResponse(res, true, INTERNAL_ERROR, null, INTERNAL_ERROR_CODE);
   } finally {
-    connection.release();
+    connection?.release();
   }
 };
 

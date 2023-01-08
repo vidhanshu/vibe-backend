@@ -44,7 +44,7 @@ const follower = async (req, res, next) => {
       INTERNAL_ERROR_CODE
     );
   } finally {
-    connection.release();
+    connection?.release();
   }
 };
 

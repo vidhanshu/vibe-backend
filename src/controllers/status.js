@@ -19,8 +19,9 @@ const {
 } = require("../configs/env");
 
 const GetStatus = async (req, res) => {
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.params;
     const [rows] = await connection.execute(
       "SELECT image FROM statuses WHERE user_id = ?",
@@ -36,13 +37,14 @@ const GetStatus = async (req, res) => {
     console.log(error);
     sendResponse(res, false, SUCCESS, null, SUCCESS_CODE);
   } finally {
-    connection.release();
+    connection?.release();
   }
 };
 
 const GetHomeStatuses = async (req, res) => {
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { limit, offset } = req.query;
     let query =
       "SELECT statuses.id, users.name, users.username, users.id as user_id, statuses.createdAt FROM statuses INNER JOIN users ON statuses.user_id = users.id";
@@ -68,13 +70,14 @@ const GetHomeStatuses = async (req, res) => {
     console.log(error);
     sendResponse(res, false, SUCCESS, null, SUCCESS_CODE);
   } finally {
-    connection.release();
+    connection?.release();
   }
 };
 
 const AddStatus = async (req, res) => {
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { file } = req;
     if (!file) {
       sendResponse(res, true, DATA_NOT_PROVIDED, null, BAD_REQUEST_CODE);
@@ -126,20 +129,21 @@ const AddStatus = async (req, res) => {
     console.log(error);
     sendResponse(res, true, INTERNAL_ERROR, null, INTERNAL_ERROR_CODE);
   } finally {
-    connection.release();
+    connection?.release();
   }
 };
 
 const RemoveStatus = async (req, res) => {
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.user;
     await connection.execute("DELETE FROM statuses WHERE user_id = ?", [id]);
     sendResponse(res, false, SUCCESS, null, SUCCESS_CODE);
   } catch (error) {
     sendResponse(res, true, INTERNAL_ERROR, null, INTERNAL_ERROR_CODE);
   } finally {
-    connection.release();
+    connection?.release();
   }
 };
 

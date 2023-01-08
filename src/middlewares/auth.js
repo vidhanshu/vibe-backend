@@ -1,13 +1,15 @@
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET } = require("../configs/env");
-const { DATABASE_CONCURRENT_CONNECTIONS } = require("../configs/constants");
 const { UNAUTHORIZED, UNAUTHORIZED_CODE } = require("../configs/response");
 const { sendResponse } = require("../utils/SendResponse");
 const pool = require("../pool");
+
 const auth = async (req, res, next) => {
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
-    const token = req.header("Authorization").replace("Bearer ", "");
+    connection = await pool.getConnection();
+    const tk = req.header("Authorization");
+    const token = tk.replace("Bearer ", "");
     const decoded = jwt.verify(token, JWT_SECRET);
     if (!decoded || !decoded.id) {
       sendResponse(res, true, UNAUTHORIZED, null, UNAUTHORIZED_CODE);
@@ -36,7 +38,7 @@ const auth = async (req, res, next) => {
     console.log(e);
     sendResponse(res, true, UNAUTHORIZED, null, UNAUTHORIZED_CODE);
   } finally {
-    connection.release();
+    connection?.release();
   }
 };
 

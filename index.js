@@ -38,5 +38,7 @@ server.listen(PORT, () => {
 // socket.io stuff
 
 io.on("connection", (socket) => {
-  console.log("a user connected");
+  console.log("New user connected");
 });
+
+module.exports = io;

@@ -17,10 +17,12 @@ const { PROFILE_IMAGE_SERVING_URL } = require("../configs/env");
 const pool = require("../pool");
 
 const GetProfile = async (req, res) => {
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     console.log("first");
     const { id } = req.params;
+    const { id: user_id } = req.user;
     const [results] = await connection.execute(
       "SELECT *,(SELECT COUNT(*) FROM  followers WHERE user_id = users.id) AS followers,(SELECT COUNT(*) FROM  followers WHERE follower_id = users.id) AS following FROM users WHERE id = ?",
       [id]
@@ -28,10 +30,18 @@ const GetProfile = async (req, res) => {
     if (results.length === 0) {
       return sendResponse(res, true, "user not exists", null, BAD_REQUEST_CODE);
     }
+    const [chats] = await connection.execute(
+      "SELECT * FROM chats WHERE (participant_1 = ? AND participant_2 = ?) OR (participant_1 = ? AND participant_2 = ?)",
+      [id, user_id, user_id, id]
+    );
     const DataToBeSent = results[0];
     delete DataToBeSent.password;
     DataToBeSent.profile = `${PROFILE_IMAGE_SERVING_URL}/${id}?${Date.now()}}`;
-    console.log(DataToBeSent);
+    if (chats.length !== 0) {
+      DataToBeSent.chat_id = chats[0].id;
+    } else {
+      DataToBeSent.chat_id = null;
+    }
     return sendResponse(res, false, SUCCESS, DataToBeSent, SUCCESS_CODE);
   } catch (error) {
     sendResponse(
@@ -42,13 +52,14 @@ const GetProfile = async (req, res) => {
       INTERNAL_ERROR_CODE
     );
   } finally {
-    connection.release();
+    connection?.release();
   }
 };
 
 const GetProfileImage = async (req, res) => {
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.params;
     const [results] = await connection.execute(
       "SELECT profile FROM users WHERE id = ?",
@@ -77,7 +88,7 @@ const GetProfileImage = async (req, res) => {
       INTERNAL_ERROR_CODE
     );
   } finally {
-    connection.release();
+    connection?.release();
   }
 };
 
@@ -85,9 +96,9 @@ const GetProfileImage = async (req, res) => {
  * @abstract get Followers list
  */
 const GetFollowers = async (req, res) => {
-  const connection = await pool.getConnection();
-
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.params;
     const { limit, offset } = req.query;
     let query =
@@ -115,13 +126,14 @@ const GetFollowers = async (req, res) => {
       INTERNAL_ERROR_CODE
     );
   } finally {
-    connection.release();
+    connection?.release();
   }
 };
 
 const SearchUserByUserNameOrName = async (req, res) => {
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { search, limit, offset } = req.query;
     if (!search) {
       return sendResponse(res, false, SUCCESS, [], SUCCESS_CODE);
@@ -147,7 +159,7 @@ const SearchUserByUserNameOrName = async (req, res) => {
     console.log(error);
     sendResponse(res, false, INTERNAL_ERROR, null, INTERNAL_ERROR_CODE);
   } finally {
-    connection.release();
+    connection?.release();
   }
 };
 /**
@@ -160,8 +172,9 @@ const UpdateName = async (req, res) => {
     return sendResponse(res, true, "Name is required", null, BAD_REQUEST_CODE);
   }
 
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     //getting id from middleware
     const { id } = req.user;
     // Update user's name
@@ -181,7 +194,7 @@ const UpdateName = async (req, res) => {
     );
   } finally {
     // Release connection
-    connection.release();
+    connection?.release();
   }
 };
 
@@ -194,9 +207,9 @@ const UpdateBio = async (req, res) => {
     return sendResponse(res, true, "Bio is required", null, BAD_REQUEST_CODE);
   }
 
-  const connection = await pool.getConnection();
-
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.user;
     // Update user's bio
     await connection.execute("UPDATE users SET bio = ? WHERE id = ?", [
@@ -206,6 +219,7 @@ const UpdateBio = async (req, res) => {
     // Return success response
     sendResponse(res, false, "Bio updated", null, SUCCESS_CODE);
   } catch (error) {
+    console.log(error);
     sendResponse(
       res,
       true,
@@ -215,15 +229,16 @@ const UpdateBio = async (req, res) => {
     );
   } finally {
     // Release connection
-    connection.release();
+    connection?.release();
   }
 };
 /**
  * @abstract Update user's profile
  */
 const UpdateProfile = async (req, res) => {
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.user;
     if (!req.file) {
       return sendResponse(
@@ -256,7 +271,7 @@ const UpdateProfile = async (req, res) => {
     );
   } finally {
     // Release connection
-    connection.release();
+    connection?.release();
   }
 };
 /**
@@ -274,8 +289,9 @@ const UpdateMobile = async (req, res) => {
       BAD_REQUEST_CODE
     );
   }
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.user;
     // Update user's mobile
     await connection.execute("UPDATE users SET mobile = ? WHERE id = ?", [
@@ -294,7 +310,7 @@ const UpdateMobile = async (req, res) => {
     );
   } finally {
     // Release connection
-    connection.release();
+    connection?.release();
   }
 };
 
@@ -323,8 +339,9 @@ const UpdateUsername = async (req, res) => {
     );
   }
 
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.user;
     //check if username already taken
     const [rows] = await connection.execute(
@@ -358,7 +375,7 @@ const UpdateUsername = async (req, res) => {
     );
   } finally {
     //Release connection
-    connection.release();
+    connection?.release();
   }
 };
 
@@ -381,8 +398,9 @@ const UpdateEmail = async (req, res) => {
     );
   }
 
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.user;
     //check if email already taken
     const [rows] = await connection.execute(
@@ -416,7 +434,7 @@ const UpdateEmail = async (req, res) => {
     );
   } finally {
     //Release connection
-    connection.release();
+    connection?.release();
   }
 };
 /**
@@ -434,8 +452,9 @@ const UpdatePassword = async (req, res) => {
     );
   }
 
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.user;
     const hash = await bcrypt.hash(password, 10);
     //update password
@@ -455,7 +474,7 @@ const UpdatePassword = async (req, res) => {
     );
   } finally {
     //Release connection
-    connection.release();
+    connection?.release();
   }
 };
 
@@ -463,8 +482,9 @@ const FollowUser = async (req, res) => {
   const { id } = req.params;
   const { id: userId } = req.user;
 
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const [rows] = await connection.execute(
       "SELECT EXISTS(SELECT 1 FROM users WHERE id = ?)",
       [id]
@@ -515,7 +535,7 @@ const FollowUser = async (req, res) => {
     );
   } finally {
     //Release connection
-    connection.release();
+    connection?.release();
   }
 };
 

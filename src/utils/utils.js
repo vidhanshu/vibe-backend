@@ -10,7 +10,8 @@ const {
   INVALID_PASSWORD,
   SQL_DUPLICATE_ENTRY,
 } = require("../configs/response");
-
+const jwt = require("jsonwebtoken");
+const { JWT_SECRET } = require("../configs/env");
 /**
  * @abstract This function checks if the user has provided all the required details for registration
  *
@@ -106,6 +107,14 @@ const TIMESTAMP_AFTER_SPECIFIC_MINS = (MINS) => {
   return new Date(date.setMinutes(date.getMinutes() + MINS));
 };
 
+const getUserIdFromJWT = (token) => {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    return decoded.id;
+  } catch (error) {
+    return null;
+  }
+};
 module.exports = {
   checkValidUserRegistrationDetails,
   SQL_error_checker,
@@ -113,4 +122,5 @@ module.exports = {
   generateNameFromEmail,
   CURRENT_TIMESTAMP,
   TIMESTAMP_AFTER_SPECIFIC_MINS,
+  getUserIdFromJWT,
 };

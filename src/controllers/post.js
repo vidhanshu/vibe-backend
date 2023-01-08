@@ -25,8 +25,9 @@ const pool = require("../pool");
 
 //TODO
 const GetHomePosts = async (req, res) => {
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.user;
     const { limit, offset } = req.query;
     let query =
@@ -55,7 +56,7 @@ const GetHomePosts = async (req, res) => {
     console.log(error);
     sendResponse(res, true, INTERNAL_ERROR, null, INTERNAL_ERROR_CODE);
   } finally {
-    connection.release();
+    connection?.release();
   }
 };
 
@@ -63,8 +64,9 @@ const GetHomePosts = async (req, res) => {
  * @description Get post all posts by id
  */
 const GetPosts = async (req, res) => {
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.params;
     const { limit, offset } = req.query;
     let query =
@@ -93,7 +95,7 @@ const GetPosts = async (req, res) => {
     console.log(error);
     sendResponse(res, true, INTERNAL_ERROR, null, INTERNAL_ERROR_CODE);
   } finally {
-    connection.release();
+    connection?.release();
   }
 };
 
@@ -102,8 +104,9 @@ const GetPosts = async (req, res) => {
  *
  */
 const GetPostImage = async (req, res) => {
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.params;
     const [results] = await connection.execute(
       "SELECT image FROM posts WHERE id = ?",
@@ -119,13 +122,14 @@ const GetPostImage = async (req, res) => {
   } catch (error) {
     res.send(null);
   } finally {
-    connection.release();
+    connection?.release();
   }
 };
 
 const GetAllComments = async (req, res) => {
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.params;
     const { limit, offset } = req.query;
     let query =
@@ -151,7 +155,7 @@ const GetAllComments = async (req, res) => {
     console.log(error);
     sendResponse(res, true, INTERNAL_ERROR, null, INTERNAL_ERROR_CODE);
   } finally {
-    connection.release();
+    connection?.release();
   }
 };
 
@@ -159,8 +163,9 @@ const GetAllComments = async (req, res) => {
  * @description fetches all the list of users who liked the post of provided post_id
  */
 const GetAllLikedByUsers = async (req, res) => {
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.params;
     const { limit, offset } = req.query;
     let query =
@@ -188,7 +193,7 @@ const GetAllLikedByUsers = async (req, res) => {
     console.log(error);
     sendResponse(res, true, INTERNAL_ERROR, null, INTERNAL_ERROR_CODE);
   } finally {
-    connection.release();
+    connection?.release();
   }
 };
 
@@ -197,8 +202,9 @@ const GetAllLikedByUsers = async (req, res) => {
  *
  */
 const CreatePost = async (req, res) => {
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.user;
     if (!req.file || !req.body.caption) {
       sendResponse(res, true, DATA_NOT_PROVIDED, null, BAD_REQUEST_CODE);
@@ -229,7 +235,7 @@ const CreatePost = async (req, res) => {
     console.log(error);
     sendResponse(res, true, INTERNAL_ERROR, null, INTERNAL_ERROR_CODE);
   } finally {
-    connection.release();
+    connection?.release();
   }
 };
 
@@ -238,8 +244,9 @@ const CreatePost = async (req, res) => {
  *
  */
 const LikePost = async (req, res) => {
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.user;
     const post_id = req.params.id;
     const [results] = await connection.execute(
@@ -264,7 +271,7 @@ const LikePost = async (req, res) => {
     console.log(error);
     sendResponse(res, true, INTERNAL_ERROR, null, INTERNAL_ERROR_CODE);
   } finally {
-    connection.release();
+    connection?.release();
   }
 };
 /**
@@ -282,8 +289,9 @@ const UpdateCaption = async (req, res) => {
     );
     return;
   }
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.params;
     const [results] = await connection.execute(
       "UPDATE posts SET caption = ? WHERE id = ? AND user_id = ?",
@@ -296,7 +304,7 @@ const UpdateCaption = async (req, res) => {
     sendResponse(res, false, SUCCESS, null, SUCCESS_CODE);
   } catch (error) {
   } finally {
-    connection.release();
+    connection?.release();
   }
 };
 
@@ -306,8 +314,9 @@ const UpdatePostImage = async (req, res) => {
     return;
   }
 
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.user;
     const post_id = req.params.id;
     const PNG = await sharp(req.file.buffer)
@@ -327,7 +336,7 @@ const UpdatePostImage = async (req, res) => {
     console.log(error);
     sendResponse(res, true, INTERNAL_ERROR, null, INTERNAL_ERROR_CODE);
   } finally {
-    connection.release();
+    connection?.release();
   }
 };
 
@@ -342,8 +351,9 @@ const Comment = async (req, res) => {
     );
     return;
   }
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.params;
     const [results] = await connection.execute(
       "INSERT INTO comments (user_id, post_id, comment) VALUES (?, ?, ?)",
@@ -377,7 +387,7 @@ const Comment = async (req, res) => {
     console.log(error);
     sendResponse(res, true, INTERNAL_ERROR, null, INTERNAL_ERROR_CODE);
   } finally {
-    connection.release();
+    connection?.release();
   }
 };
 
@@ -392,8 +402,9 @@ const UpdateComment = async (req, res) => {
     );
     return;
   }
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.user;
     const comment_id = req.params.id;
     const [results] = await connection.execute(
@@ -409,13 +420,14 @@ const UpdateComment = async (req, res) => {
     console.log(error);
     sendResponse(res, true, INTERNAL_ERROR, null, INTERNAL_ERROR_CODE);
   } finally {
-    connection.release();
+    connection?.release();
   }
 };
 
 const DeletePost = async (req, res) => {
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.user;
     const post_id = req.params.id;
     const [results] = await connection.execute(
@@ -431,13 +443,14 @@ const DeletePost = async (req, res) => {
     console.log(error);
     sendResponse(res, true, INTERNAL_ERROR, null, INTERNAL_ERROR_CODE);
   } finally {
-    connection.release();
+    connection?.release();
   }
 };
 
 const DeleteComment = async (req, res) => {
-  const connection = await pool.getConnection();
+  let connection = null;
   try {
+    connection = await pool.getConnection();
     const { id } = req.user;
     const comment_id = req.params.id;
     const [results] = await connection.execute(
@@ -453,7 +466,7 @@ const DeleteComment = async (req, res) => {
     console.log(error);
     sendResponse(res, true, INTERNAL_ERROR, null, INTERNAL_ERROR_CODE);
   } finally {
-    connection.release();
+    connection?.release();
   }
 };
 
