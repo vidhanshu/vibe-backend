@@ -7,7 +7,7 @@ const {
   INTERNAL_ERROR_CODE,
   SUCCESS,
   NOT_FOUND,
-} = require("../configs/response.js.js");
+} = require("../configs/response.js");
 const { PROFILE_IMAGE_SERVING_URL } = require("../configs/env.js");
 const pool = require("../pool.js");
 const { CURRENT_TIMESTAMP } = require("../utils/utils.js");
