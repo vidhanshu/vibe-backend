@@ -1,4 +1,4 @@
-const { sendResponse } = require("../utils/sendResponse.js");
+const { sendResponse } = require("../utils/SendResponse.js");
 const {
   BAD_REQUEST,
   BAD_REQUEST_CODE,

@@ -1,7 +1,7 @@
 const { STATUS_IMAGE_RESIZE_VALUE } = require("../configs/constants.js");
 const cron = require("node-cron");
 
-const { sendResponse } = require("../utils/sendResponse.js");
+const { sendResponse } = require("../utils/SendResponse.js");
 const {
   BAD_REQUEST_CODE,
   INTERNAL_ERROR,
