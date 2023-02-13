@@ -7,10 +7,10 @@ const {
   INTERNAL_ERROR_CODE,
   SUCCESS,
   NOT_FOUND,
+  NOT_FOUND_CODE,
 } = require("../configs/response.js");
 const { PROFILE_IMAGE_SERVING_URL } = require("../configs/env.js");
 const pool = require("../pool.js");
-const { CURRENT_TIMESTAMP } = require("../utils/utils.js");
 
 const GetAllMessages = async (req, res) => {
   let connection = null;
@@ -28,10 +28,9 @@ const GetAllMessages = async (req, res) => {
       "SELECT EXISTS(SELECT * FROM chats WHERE (participant_1 = ? AND participant_2 = ?) OR (participant_1 = ? AND participant_2 = ?) AND id = ?) AS is_user_part_of_chat",
       [sender_id, reciever_id, reciever_id, sender_id, chat_id]
     );
-    console.log(results);
     //user is not part of chat for which he is requesting
     if (!results[0].is_user_part_of_chat) {
-      sendResponse(res, true, NOT_FOUND, "Chat not found", NOT_FOUND);
+      sendResponse(res, true, NOT_FOUND, "Chat not found", NOT_FOUND_CODE);
       return;
     }
     let query =
@@ -107,7 +106,7 @@ const GetChatRecents = async (req, res) => {
           user_name: result.user2_name,
           user_profile: `${PROFILE_IMAGE_SERVING_URL}/${
             result.user2_id
-          }?${CURRENT_TIMESTAMP()}`,
+          }?${Date.now()}`,
           sender_id: result.sender_id,
           reciever_id: result.reciever_id,
           last_message: result.last_message,
@@ -120,7 +119,7 @@ const GetChatRecents = async (req, res) => {
         user_name: result.user1_name,
         user_profile: `${PROFILE_IMAGE_SERVING_URL}/${
           result.user1_id
-        }?${CURRENT_TIMESTAMP()}`,
+        }?${Date.now()}`,
         sender_id: result.sender_id,
         reciever_id: result.reciever_id,
         last_message: result.last_message,
@@ -148,6 +147,7 @@ const SendMessage = async (req, res) => {
     connection = await pool.getConnection();
     const { message } = req.body;
     if (!message) {
+      console.log("No message provided");
       sendResponse(
         res,
         true,
@@ -166,6 +166,7 @@ const SendMessage = async (req, res) => {
         [sender_id, reciever_id, reciever_id, sender_id]
       );
       if (results[0].chat_exists) {
+        console.log("chat does exists already!!");
         sendResponse(
           res,
           true,
@@ -207,9 +208,9 @@ const SendMessage = async (req, res) => {
       const messageToBeSent = {
         id: messages.insertId,
         message,
-        sentAt: CURRENT_TIMESTAMP(),
-        sender: sender_id,
-        reciever: reciever_id,
+        sentAt: Date.now(),
+        sender_id: sender_id,
+        reciever_id: reciever_id,
         chat_id: chats.insertId,
       };
       sendResponse(res, false, SUCCESS, messageToBeSent, SUCCESS_CODE);
@@ -235,7 +236,7 @@ const SendMessage = async (req, res) => {
     //if chat exists - update the details
     const [chats] = await connection.execute(
       "UPDATE chats SET last_message = ?, participant_1 = ?, participant_2 = ?, last_message_timestamp = ?",
-      [message, sender_id, reciever_id, CURRENT_TIMESTAMP()]
+      [message, sender_id, reciever_id, Date.now()]
     );
     if (!chats.affectedRows) {
       sendResponse(
