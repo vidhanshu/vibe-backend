@@ -36,9 +36,33 @@ server.listen(PORT, () => {
 });
 
 // socket.io stuff
-
+const LIST_OF_ROOMS = [];
 io.on("connection", (socket) => {
-  console.log("New user connected");
+  //when somebody go on chat screen in frontend
+  socket.on("privateChatRequest", (data) => {
+    //data contains senderId and receiverId
+    const { senderId, receiverId } = data;
+    //check if room already exists
+    let roomName = LIST_OF_ROOMS.find(
+      (room) => room === senderId + "-" + receiverId
+    );
+    if (!roomName) {
+      //check if room exists in reverse order
+      roomName = LIST_OF_ROOMS.find(
+        (room) => room === receiverId + "-" + senderId
+      );
+    }
+    //if room doesn't exist then create a new room
+    if (!roomName) {
+      roomName = senderId + "-" + receiverId;
+      LIST_OF_ROOMS.push(roomName);
+    }
+    //join the room
+    socket.join(roomName);
+    socket.on("privateChatMessage", (messageData) => {
+      socket.to(roomName).emit("privateChatMessage", messageData);
+    });
+  });
 });
 
 module.exports = io;

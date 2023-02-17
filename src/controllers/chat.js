@@ -235,8 +235,8 @@ const SendMessage = async (req, res) => {
     }
     //if chat exists - update the details
     const [chats] = await connection.execute(
-      "UPDATE chats SET last_message = ?, participant_1 = ?, participant_2 = ?, last_message_timestamp = ?",
-      [message, sender_id, reciever_id, Date.now()]
+      "UPDATE chats SET last_message = ?, participant_1 = ?, participant_2 = ?, last_message_timestamp = ? WHERE id = ?",
+      [message, sender_id, reciever_id, Date.now(), chat_id]
     );
     if (!chats.affectedRows) {
       sendResponse(

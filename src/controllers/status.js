@@ -103,18 +103,21 @@ const AddStatus = async (req, res) => {
 
     await connection.execute(
       "INSERT INTO statuses (image, expiresAt, user_id) VALUES (?, ?, ?)",
-      [PNG, TIMESTAMP_AFTER_SPECIFIC_MINS(24 * 60), req.user.id]
+      [PNG, TIMESTAMP_AFTER_SPECIFIC_MINS(1 * 60), req.user.id]
     );
     /**
      * @description scheduling the cron job to run every midnight once and delete all statuses whose expiresAt is older than current time
      * @doubt -> one more doubt as i have created the cron job inside the express rounde handler will the multiple cron jobs will be created on every req?
      * @solution -> No, creating the cron job inside an express route handler will not create multiple instances of the cron job. The cron job will only be created once, when the code that defines it is executed. Each time the route is accessed, the code inside the route handler will be executed, but the cron job itself will not be re-created. It will continue to run according to the schedule that you have defined, regardless of how many times the route is accessed.
      */
+    /**
+     * @description SCHEDULES THE EVENT IN THE MYSQL DB HENCE CRON JOB REMOVED
+     
     cron.schedule("0 0 * * *", async () => {
       // Delete images that have expired
       const connection_for_cron_job = await pool.getConnection();
       try {
-        console.log("RUNNING AFTER EVERY 24 hrs");
+        console.log("RUNNING AFTER EVERY 1 hr");
         connection_for_cron_job.execute(
           "DELETE FROM statuses WHERE expiresAt < NOW()"
         );
@@ -124,6 +127,8 @@ const AddStatus = async (req, res) => {
         connection_for_cron_job.release();
       }
     });
+     */
+
     sendResponse(res, false, SUCCESS, null, SUCCESS_CODE);
   } catch (error) {
     console.log(error);
