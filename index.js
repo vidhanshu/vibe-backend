@@ -40,6 +40,7 @@ const LIST_OF_ROOMS = [];
 io.on("connection", (socket) => {
   //when somebody go on chat screen in frontend
   socket.on("privateChatRequest", (data) => {
+    console.log(data)
     //data contains senderId and receiverId
     const { senderId, receiverId } = data;
     //check if room already exists
@@ -62,7 +63,28 @@ io.on("connection", (socket) => {
     socket.on("privateChatMessage", (messageData) => {
       socket.to(roomName).emit("privateChatMessage", messageData);
     });
+    socket.disconnect((e) => console.log("disconnected", e));
   });
 });
+// const CONNECTED = [];
+// io.on("connection", (socket) => {
+//   const userId = socket.handshake.query.userId;
+//   if (userId) {
+//     CONNECTED.push(userId);
+//     console.log(CONNECTED);
+//     socket.join(userId);
+//   }
+//   console.log("connected", userId);
+//   //when somebody go on chat screen in frontend
+//   socket.on("privateChatRequest", (data) => {
+//     //data contains senderId and receiverId
+//     const { receiverId } = data;
+//     console.log("privateChatRequest", data);
+//     socket.on("privateChatMessage", (messageData) => {
+//       console.log("privateChatMessage", messageData);
+//       io.to(receiverId).emit("privateChatMessage", messageData);
+//     });
+//   });
+// });
 
 module.exports = io;
